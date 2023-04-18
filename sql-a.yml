@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gke-cloud-sql-quickstart
+spec:
+  selector:
+    matchLabels:
+      app: gke-cloud-sql-app
+  template:
+    metadata:
+      labels:
+        app: gke-cloud-sql-app
+    spec:
+      containers:
+      - name: gke-cloud-sql-app
+        image: us-central1-docker.pkg.dev/saroka-gc-bootcamp/myrepo/gke-sql:latest
+        resources:
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+        - name: INSTANCE_HOST
+          value: "0.0.0.0"
+        - name: DB_PORT
+          value: "3306"
+        envFrom:
+        - secretRef:
+            name: db
+      - name: cloud-sql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:latest
+        resources:
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        command:
+        - "/cloud_sql_proxy"
+        - "-instances=saroka-gc-bootcamp:us-central1:saroka=tcp:3306"
+        securityContext:
+          runAsNonRoot: true

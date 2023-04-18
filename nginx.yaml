@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: default-pool
+      serviceAccountName: alchemy
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - |
+          zone=$(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/zone" | awk -F/ '{print $NF}') ; echo $zone
+          name=$(hostname)
+          cat << EOF > /html/index.nginx-debian.html
+          <h3>Siarhei Saroka</h3>
+          <h3>My $name serves at $zone<h3>"
+          EOF
+          cat << EOF > /html/index.html
+          <h3>Path nginx</h3>
+          <h3>My $name serves at $zone<h3>
+          EOF
+        image: google/cloud-sdk:alpine
+        name: cloudinit
+        volumeMounts:
+        - mountPath: /html/
+          name: shared-pod-volume
+      containers:
+      - name: nginx
+        image: nginx:latest
+        volumeMounts:
+        - name: nginxcfg
+          mountPath: /etc/nginx/conf.d
+        - name: shared-pod-volume
+          mountPath: /var/www/html
+        - name: shared-pod-volume
+          mountPath: /html/
+        ports:
+        - containerPort: 80
+      volumes:
+      - name: nginxcfg
+        configMap:
+          name: nginxcm
+          items:
+          - key: default.conf
+            path: default.conf
+      - name: nginxdef
+        configMap:
+          name: nginxcm
+          items:
+          - key: index.nginx-debian.html
+            path: index.nginx-debian.html
+          - key: index.html
+            path: index.html
+      - name: shared-pod-volume
+        emptyDir: {}

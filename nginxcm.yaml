@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginxcm
+data:
+  default.conf: |
+    server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        root /var/www/html;
+        index index.nginx-debian.html;
+        server_name _;
+        location / { try_files $uri $uri/ =404; }
+        location ^~ /nginx {
+        try_files $uri $uri/ /index.html;
+        }
+    }
+  index.nginx-debian.html: |
+    <h3>Siarhei Saroka</h3>
+    <h3>My name serves at zone<h3>
+  index.html: |
+    <h3>Path nginx</h3>
+    <h3>My name serves at zone<h3>
